@@ -12,18 +12,26 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const initSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        await fetchProfile(session.user.id)
       } else {
         setLoading(false)
       }
-    })
+    }
+    
+    initSession()
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        if (event === 'INITIAL_SESSION') {
+          // Handled by initSession above, prevent duplicate fetch
+          return
+        }
+        
         setUser(session?.user ?? null)
         if (session?.user) {
           await fetchProfile(session.user.id)
@@ -85,10 +93,14 @@ export function AuthProvider({ children }) {
   }
 
   async function signOut() {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-    setUser(null)
-    setProfile(null)
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Error during sign out:', error)
+    } finally {
+      setUser(null)
+      setProfile(null)
+    }
   }
 
   async function getAccessToken() {
