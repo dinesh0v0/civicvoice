@@ -14,23 +14,32 @@ export function AuthProvider({ children }) {
     // Get initial session
     const initSession = async () => {
       const timeout = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth Timeout')), 3000)
+        setTimeout(() => reject(new Error('Auth Timeout')), 3500)
       )
 
-      try {
-        const sessionPromise = supabase.auth.getSession()
-        const { data: { session }, error } = await Promise.race([sessionPromise, timeout])
-        if (error) throw error
-        
-        setUser(session?.user ?? null)
-        if (session?.user) {
-          await fetchProfile(session.user.id)
+      const performInit = async () => {
+        try {
+          const { data: { session }, error } = await supabase.auth.getSession()
+          if (error) throw error
+          
+          const currentUser = session?.user ?? null
+          setUser(currentUser)
+          
+          if (currentUser) {
+            // fetchProfile also has its own loading management, but we want it to be part of the race
+            await fetchProfile(currentUser.id)
+          }
+        } catch (err) {
+          throw err
         }
+      }
+
+      try {
+        await Promise.race([performInit(), timeout])
       } catch (err) {
-        console.warn('Init session warning/timeout:', err)
-        // If we timeout, we assume no user or slow network
-        if (!user) setUser(null)
+        console.warn('Auth initialization reached timeout or failed:', err.message)
       } finally {
+        // Force loading to false regardless of what happened
         setLoading(false)
       }
     }
