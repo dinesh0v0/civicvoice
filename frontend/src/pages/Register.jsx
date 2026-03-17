@@ -50,7 +50,7 @@ export default function Register() {
     <div className="auth-container" id="register-page">
       <div className="auth-card">
         <h1>Create Account</h1>
-        <p className="auth-subtitle">Join CivicVoice and make your voice heard</p>
+        <p className="auth-subtitle">Join this Demo Community Project and make your voice heard</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

@@ -45,7 +45,7 @@ export default function Login() {
     <div className="auth-container" id="login-page">
       <div className="auth-card">
         <h1>Welcome Back</h1>
-        <p className="auth-subtitle">Sign in to your CivicVoice account</p>
+        <p className="auth-subtitle">Sign in to this Demo Community Project</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

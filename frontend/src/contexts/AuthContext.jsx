@@ -13,8 +13,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Get initial session
     const initSession = async () => {
+      const timeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Auth Timeout')), 3000)
+      )
+
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const sessionPromise = supabase.auth.getSession()
+        const { data: { session }, error } = await Promise.race([sessionPromise, timeout])
         if (error) throw error
         
         setUser(session?.user ?? null)
@@ -22,8 +27,9 @@ export function AuthProvider({ children }) {
           await fetchProfile(session.user.id)
         }
       } catch (err) {
-        console.error('Error getting session:', err)
-        setUser(null)
+        console.warn('Init session warning/timeout:', err)
+        // If we timeout, we assume no user or slow network
+        if (!user) setUser(null)
       } finally {
         setLoading(false)
       }
