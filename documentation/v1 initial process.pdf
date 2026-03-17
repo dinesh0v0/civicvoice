@@ -1,0 +1,212 @@
+# Online Complaint Management System - Implementation Plan
+
+A full-stack web application for citizens to submit and track complaints to police, with an admin panel for officers to manage, update, and resolve them.
+
+## Architecture Overview
+
+```mermaid
+graph LR
+    A[React Frontend<br>Netlify] --> B[FastAPI Backend<br>Vercel]
+    B --> C[Supabase<br>PostgreSQL + Auth]
+```
+
+| Layer | Technology | Hosting |
+|-------|-----------|---------|
+| Frontend | React 18 + Vite | Netlify |
+| Backend | Python FastAPI | Vercel |
+| Database & Auth | Supabase | Supabase Cloud |
+
+---
+
+## Database Schema (Supabase)
+
+### Tables
+
+**`profiles`** — extends Supabase auth.users
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK, FK → auth.users) | |
+| full_name | text | |
+| phone | text | |
+| role | text | `citizen` or `admin` |
+| created_at | timestamptz | |
+
+**`complaints`**
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | |
+| user_id | uuid (FK → profiles) | |
+| tracking_id | text (unique) | e.g. `CMP-2026-00042` |
+| category | text | Theft, Fraud, Cybercrime, etc. |
+| subject | text | |
+| description | text | |
+| location | text | |
+| status | text | `pending` / `in_review` / `investigating` / `resolved` / `rejected` |
+| priority | text | `low` / `medium` / `high` / `critical` |
+| admin_remarks | text | |
+| created_at | timestamptz | |
+| updated_at | timestamptz | |
+
+---
+
+## Frontend (React + Vite)
+
+### Project Structure
+```
+frontend/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/     (Navbar, Footer, Sidebar, ProtectedRoute, StatusBadge...)
+│   ├── contexts/       (AuthContext.jsx)
+│   ├── pages/
+│   │   ├── Landing.jsx
+│   │   ├── Login.jsx
+│   │   ├── Register.jsx
+│   │   ├── UserDashboard.jsx
+│   │   ├── SubmitComplaint.jsx
+│   │   ├── TrackComplaint.jsx
+│   │   ├── ComplaintDetail.jsx
+│   │   ├── AdminDashboard.jsx
+│   │   ├── AdminComplaints.jsx
+│   │   └── AdminComplaintDetail.jsx
+│   ├── lib/            (supabaseClient.js, api.js)
+│   ├── styles/         (index.css — full design system)
+│   ├── App.jsx
+│   └── main.jsx
+├── index.html
+├── netlify.toml
+└── vite.config.js
+```
+
+### Pages
+
+| Page | Route | Purpose |
+|------|-------|---------|
+| Landing | `/` | Hero, features, CTA |
+| Login | `/login` | Email + password |
+| Register | `/register` | Sign up as citizen |
+| User Dashboard | `/dashboard` | My complaints overview |
+| Submit Complaint | `/submit` | Form with category, location, description |
+| Track Complaint | `/track` | Search by tracking ID |
+| Complaint Detail | `/complaint/:id` | Full detail + status timeline |
+| Admin Dashboard | `/admin` | Stats cards, recent complaints |
+| Admin Complaints | `/admin/complaints` | Full list with filters |
+| Admin Detail | `/admin/complaint/:id` | Update status, priority, remarks |
+
+### Design Theme
+- **Dark professional theme** with deep navy/charcoal base (`#0f172a`, `#1e293b`)
+- **Accent**: Vibrant blue-purple gradient (`#6366f1` → `#8b5cf6`)
+- **Status colors**: Green (resolved), amber (in_review), red (rejected), blue (investigating)
+- **Font**: Google Fonts "Inter" for body, "Outfit" for headings
+- **Glass-morphism** cards with subtle backdrop-blur
+- **Micro-animations** on hover, status transitions, page loads
+- **Fully responsive** via CSS media queries + flexbox/grid
+
+---
+
+## Backend (Python FastAPI)
+
+### Project Structure
+```
+backend/
+├── main.py            (FastAPI app, CORS, routes)
+├── database.py        (Supabase client init)
+├── routes/
+│   ├── auth.py        (register, login, profile)
+│   ├── complaints.py  (CRUD for citizens)
+│   └── admin.py       (admin-only endpoints)
+├── requirements.txt
+└── vercel.json
+```
+
+### API Endpoints
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| POST | `/api/auth/register` | — | Register new citizen |
+| POST | `/api/auth/login` | — | Login |
+| GET | `/api/auth/profile` | User | Get profile |
+| POST | `/api/complaints` | User | Submit complaint |
+| GET | `/api/complaints` | User | List my complaints |
+| GET | `/api/complaints/:id` | User | Get complaint detail |
+| GET | `/api/complaints/track/:trackingId` | — | Public tracking |
+| GET | `/api/admin/complaints` | Admin | List all complaints |
+| GET | `/api/admin/stats` | Admin | Dashboard statistics |
+| PATCH | `/api/admin/complaints/:id` | Admin | Update status/priority/remarks |
+
+---
+
+## Proposed Changes
+
+### Database Setup
+#### [NEW] [schema.sql](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/database/schema.sql)
+SQL migration script to create tables, RLS policies, and seed admin user in Supabase.
+
+---
+
+### Backend
+#### [NEW] [main.py](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/main.py)
+FastAPI application with CORS, route mounting.
+
+#### [NEW] [database.py](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/database.py)
+Supabase Python client initialization.
+
+#### [NEW] [routes/auth.py](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/routes/auth.py)
+Authentication endpoints (register, login, profile).
+
+#### [NEW] [routes/complaints.py](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/routes/complaints.py)
+Citizen complaint CRUD endpoints.
+
+#### [NEW] [routes/admin.py](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/routes/admin.py)
+Admin-only management endpoints.
+
+#### [NEW] [requirements.txt](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/requirements.txt)
+Python dependencies (fastapi, uvicorn, supabase, python-dotenv).
+
+#### [NEW] [vercel.json](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/backend/vercel.json)
+Vercel deployment config for Python serverless.
+
+---
+
+### Frontend  
+#### [NEW] All files under `frontend/src/`
+Complete React application (~15 files) as outlined in the structure above.
+
+#### [NEW] [netlify.toml](file:///c:/Users/acer/Desktop/Online%20complaint%20management%20system/frontend/netlify.toml)
+Netlify deployment config with SPA redirect rules.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Supabase Setup**: You will need to create a Supabase project at [supabase.com](https://supabase.com) and provide:
+> - `SUPABASE_URL`
+> - `SUPABASE_ANON_KEY`
+> - `SUPABASE_SERVICE_ROLE_KEY` (for the backend)
+>
+> I will provide the SQL schema to run in the Supabase SQL Editor.
+
+> [!NOTE]
+> The backend uses **FastAPI** (modern, fast Python framework) — this is the best fit for Vercel's Python serverless runtime. Is this acceptable, or do you prefer Flask/Django?
+
+---
+
+## Verification Plan
+
+### Automated (Browser Testing)
+1. **Start the dev servers** — `npm run dev` (frontend) + `uvicorn main:app` (backend)
+2. **Open browser** and verify:
+   - Landing page loads with correct theme, fonts, layout
+   - Register → Login flow works
+   - Submit a complaint → appears on user dashboard
+   - Track complaint by ID
+   - Admin login → admin dashboard shows stats
+   - Admin can update complaint status
+   - All pages are responsive (test mobile viewport)
+
+### Manual Verification (User)
+- Deploy to Netlify (frontend) and Vercel (backend)
+- Create a Supabase project and run the provided schema SQL
+- Test the full flow end-to-end on your phone and laptop
