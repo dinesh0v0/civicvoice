@@ -19,7 +19,7 @@ export default function Landing() {
         <div className="hero-content">
           <div className="hero-badge">
             <HiOutlineShieldCheck />
-            Trusted by Citizens & Law Enforcement
+            Demo Community Project — Not a Government Site
           </div>
           <h1>
             Your Voice Matters.{' '}
