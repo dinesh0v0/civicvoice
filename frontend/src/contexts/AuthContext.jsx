@@ -13,11 +13,18 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Get initial session
     const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await fetchProfile(session.user.id)
-      } else {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) throw error
+        
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await fetchProfile(session.user.id)
+        }
+      } catch (err) {
+        console.error('Error getting session:', err)
+        setUser(null)
+      } finally {
         setLoading(false)
       }
     }
@@ -53,10 +60,14 @@ export function AuthProvider({ children }) {
         .eq('id', userId)
         .single()
 
-      if (error) throw error
-      setProfile(data)
+      if (error) {
+        console.warn('Profile fetch warning:', error)
+        setProfile(null)
+      } else {
+        setProfile(data)
+      }
     } catch (err) {
-      console.error('Error fetching profile:', err)
+      console.error('Error in fetchProfile:', err)
       setProfile(null)
     } finally {
       setLoading(false)
